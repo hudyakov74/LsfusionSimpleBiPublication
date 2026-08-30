@@ -6,11 +6,15 @@ NAVIGATOR {
 }
 
 
+
 for oneClick copy from FOOTER add
 
 onWebClientInit() + {
     onWebClientInit('myBalanceCopyFooter.js') <- 1;
 }
+
+
+
 
 for Calculator on numeric input  add
 
