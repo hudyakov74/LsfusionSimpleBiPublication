@@ -1,0 +1,120 @@
+MODULE BiViewForm;
+
+REQUIRE BiViewList, BiViewSqlGenerator, BiViewExport;
+
+NAMESPACE BiView;
+
+tableKey(Table t) =  GROUP MAX TableKey tt IF name(tt) = 'key0' AND table(tt) = t;
+
+FORM selectTableForBi 
+    OBJECTS  tb = Table
+    //FILTERGROUP ff FILTER  'sid' sid(table(t)) == classSID(t) DEFAULT 
+    PROPERTIES  class = class(tableKey(tb)), classSID = classSID(tableKey(tb)) , sid = sid(tableKey(tb))
+    PROPERTIES sidt 'sidt' =  sid(tb)
+;
+
+FORM selectColumnsForBi
+    OBJECTS t = Table  PANEL 
+    OBJECTS c = TableColumn
+    FILTERGROUP fg1 FILTER 'v/все' table(c) == t DEFAULT 
+    PROPERTIES  t = t PANEL,
+    caption       'Имя колонки (sys)'     = caption(c) ON CHANGE {},
+    sid           'Колонка (sys)'         = sid(c) READONLY,
+    classSID      'Таблица'               = classSID(tableKey(table(c))) 
+;
+
+FORM biViewForm 'Форма генерации view для BI систем'
+    OBJECTS s = BiViewList
+    PROPERTIES  DELETE(s), NEW(s),
+    enable(s), disableKey0(s), order(s),
+    name  'Имя таблицы view' = name(s),
+     class 'Таблица (sys)'    = class(tableKey(table(s))) ON CHANGE { DIALOG selectTableForBi OBJECTS tb = table(s)  INPUT inp   READONLY
+         DO {
+             table(s)  <- (inp);
+             name(s)   <- left(class(tableKey(inp)),30);
+         }
+     },
+    isSqlManual(s),
+    formBiViewListSql 'sql' = {SHOW  formBiViewListSql OBJECTS d = s;} DRAW s GRID,
+    classSID = classSID(tableKey(table(s))) READONLY 
+
+    OBJECTS c = BiViewColumn
+    FILTERGROUP fg1 FILTER 'v/все' tableBi(c) = s KEY 'F8' DEFAULT  
+    PROPERTIES 
+    DELETE(c), NEW(c),
+    refillColumns 'Перезаполнить колонки' = {
+      //  MESSAGE table(s);
+         FOR table(TableColumn col) == table(s)  AND NOT (GROUP MAX BiViewColumn cc IF tableBi(cc) = s AND column(cc) == col) NOINLINE 
+         NEW new = BiViewColumn DO {
+             tableBi(new) <- s;
+             column(new) <- col;
+             //columnBi(new) <-  ;
+             name(new) <- left(caption(col), 30);
+         }
+     },
+    selectColumnsForBi 'Показать список колонок' = {SHOW selectColumnsForBi;},
+    enable(c),
+    nameC         'Имя колонки view'      = name(c),
+    caption       'Имя колонки (sys)'     = caption(column(c)) ON CHANGE   {DIALOG selectColumnsForBi OBJECTS t = table(s), c = c INPUT inp LIST caption(inp) 
+                                                                                 DO {
+                                                                                     column(c) <- inp;
+                                                                                     name(c) <- caption( inp );
+                                                                                 } 
+                                                                             },
+    columnTableBi 'Таблица для значения' =  name(columnTableBi(c)),
+    columnValueBi 'Колонка для значения' =  name(columnValueBi(c)),
+    sid           'Колонка (sys)'         = sid(column(c)) READONLY
+
+    OBJECTS users = BiUsers
+    PROPERTIES editUser 'Аккаунты доступа к вирт.таблицам' = {SHOW  biUsersList DOCKED NOWAIT;},
+    readPermission(s, users), login = CONCAT '','biuser',login(users); 
+;
+
+DESIGN biViewForm {
+    OBJECTS {
+        fill = 1;
+        NEW panTop {
+            fill = 0.2;
+            horizontal = TRUE;
+            lines = 1;
+            NEW panTopl {
+                fill = 0.8;
+                MOVE BOX (s);
+            }
+            NEW panTopr {
+                fill = 0.2;
+                MOVE BOX (users);
+            }
+        }
+        NEW panBttm {
+            fill = 0.8;
+            MOVE BOX (c);
+        }
+    }
+    
+    PROPERTY (name) {charWidth = 15; }
+    PROPERTY (class) {charWidth = 15;}
+    PROPERTY (classSID) {charWidth = 15;}
+    PROPERTY (login) {charWidth = 10;}
+    TOOLBARRIGHT (users) {MOVE PROPERTY (editUser);}
+    TOOLBARRIGHT (c) {MOVE PROPERTY (refillColumns);
+                      MOVE PROPERTY (selectColumnsForBi);  
+                     }
+
+
+    PROPERTY (nameC) {charWidth = 15;}
+    PROPERTY (caption) {charWidth = 15;}
+    PROPERTY (columnTableBi) {charWidth = 15;}
+    PROPERTY (columnValueBi) {charWidth = 15;}
+    PROPERTY (sid) {charWidth = 15;}
+}
+
+
+EXTEND FORM biViewForm
+PROPERTIES  generateViewSql 'generateViewSql' = { showCompleteSql(); SHOW formBiViewSql OBJECTS t = sqlCompleteScript();}
+PROPERTIES  exec 'Опубликовать' = {
+    INTERNAL DB  generateCompleteSql();
+}
+ 
+
+;

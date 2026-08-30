@@ -1,0 +1,23 @@
+MODULE BiUsers;
+
+REQUIRE Reflection;
+
+NAMESPACE BiView;
+
+CLASS BiUsers 'Аккаунты доступа к таблицам';
+TABLE biUsers(BiUsers);
+
+login    'Логин'       = DATA STRING[30](BiUsers); 
+password 'пароль'      = DATA STRING[30](BiUsers); 
+schema   'SCHEMA'      = DATA STRING[30](BiUsers);  
+comment  'Комментарий' = DATA STRING[30](BiUsers); 
+
+FORM  biUsersList 'Аккаунты доступа к виртуальным таблицам'
+    OBJECTS d = BiUsers
+    PROPERTIES notes = 'В реальной базе пользователь заводится с префиксом biuser+login в целях безопасности' PANEL READONLY 
+    PROPERTIES(d) login, password, DELETE, NEW 
+    LIST BiUsers OBJECT d
+;
+DESIGN biUsersList {
+    PROPERTY (notes) {charWidth = 300;}
+}

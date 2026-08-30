@@ -1,0 +1,130 @@
+MODULE BiViewSqlGenerator;
+
+REQUIRE BiViewList, BiUsers, Utils;
+
+NAMESPACE BiView;
+
+// Функция для экранирования имен с пробелами в двойные кавычки
+quoteIfNeeded(STRING s) = 
+    IF isSubstring(s, ' ') THEN '"' + s + '"' ELSE s;
+
+// Генерация имени view с префиксом v_
+viewName(BiViewList s) = 'v_' + name(s);
+
+// Получение имени таблицы PostgreSQL из tableKey
+tableSid(BiViewList s) = sid(table(s));
+
+// Уникальный алиас на случай, если колонка ссылается на свою же таблицу
+tableAlias(BiViewColumn c) = 't_' + sid(column(c));
+
+// Генерация списка колонок для SELECT с учетом enable флага и присвоением имен AS
+selectColumnsList(BiViewList s) = 
+    GROUP CONCAT 
+        
+        (IF tableBi(BiViewColumn c) = s 
+            AND  
+            (enable(c)  // OR (GROUP MAX TRUE IF columnValueBi(BiViewColumn cc) == c )
+            ) 
+             
+            THEN (CASE
+               WHEN  columnTableBi(c) AND  tableBi(c) == columnTableBi(c)
+                                       THEN quoteIfNeeded(tableAlias(c)) + '.' + quoteIfNeeded(sid(column(columnValueBi(c)))) + ' AS ' + quoteIfNeeded(name(c))
+               WHEN  columnTableBi(c)  THEN quoteIfNeeded(viewName(columnTableBi(c))) + '.' + quoteIfNeeded(name(columnValueBi(c))) + ' AS ' + quoteIfNeeded(name(c))
+                ELSE quoteIfNeeded(tableSid(tableBi(c))) + '.' + quoteIfNeeded(sid(column(c))) + ' AS ' + quoteIfNeeded(name(c))
+            )
+        ), 
+        ',\n' 
+    ORDER c;
+
+// Генерация JOIN'ов для связанных таблиц
+joinsList(BiViewList s) =
+    GROUP CONCAT
+    (IF tableBi(BiViewColumn c) = s  AND columnTableBi(c)
+        AND  enable(c) 
+        AND
+    (
+        (GROUP LAST  BiViewColumn check IF tableBi(check) = s AND  columnTableBi(check) ==  columnTableBi(c) ORDER check) == c
+    )
+    THEN (CASE
+            WHEN tableBi(c) == columnTableBi(c)
+            THEN 'LEFT JOIN ' + lower(quoteIfNeeded(tableSid(columnTableBi(c)))) + ' AS ' + quoteIfNeeded(tableAlias(c)) +
+                ' ON ' + quoteIfNeeded(tableSid(tableBi(c))) + '.' + quoteIfNeeded(sid(column(c))) + ' = ' + quoteIfNeeded(tableAlias(c)) + '.key0'
+            ELSE 'LEFT JOIN report_lsfuson.' + quoteIfNeeded(viewName(columnTableBi(c))) +
+                ' ON ' + quoteIfNeeded(tableSid(s)) + '.' + quoteIfNeeded(sid(column(c))) + ' = ' + quoteIfNeeded(viewName(columnTableBi(c))) + '.key0'
+            )
+        ),
+    '\n'
+    ORDER c;
+
+// Основная функция генерации SQL для CREATE VIEW
+generateViewSql(BiViewList s) =  
+IF isSqlManual(s) THEN sqlManual(s)
+ELSE 'DROP VIEW IF EXISTS report_lsfuson.' + quoteIfNeeded(viewName(s)) + ' CASCADE;\n' +
+    'CREATE OR REPLACE VIEW report_lsfuson.' + quoteIfNeeded(viewName(s)) + ' AS\n' +
+    'SELECT\n' +
+    '  ' + (IF NOT disableKey0(s) THEN quoteIfNeeded(tableSid(s))+'.key0 as key0,\n') +   
+    '  ' + selectColumnsList(s) + '\n' +
+    'FROM ' + lower(quoteIfNeeded(tableSid(s))) + ' AS ' + quoteIfNeeded(tableSid(s)) +
+    (IF joinsList(s) THEN '\n' + joinsList(s) ELSE '') + ';';
+
+// Генерация SQL для создания пользователя в PostgreSQL
+generateUserSql(BiUsers u) = 
+ //   'CREATE USER IF NOT EXISTS biUser' + login(u) + ';\nALTER USER biUser' + login(u) +' WITH PASSWORD \'' + password(u) + '\';';
+'
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = \'biuser'+ login(u) +'\') THEN
+CREATE USER biuser'+ login(u) +'  WITH PASSWORD \''+password(u)+'\';
+ELSE
+ALTER USER biuser'+ login(u) +'   WITH PASSWORD \''+password(u)+'\';
+END IF;
+END
+$$;
+';
+// Генерация SQL для назначения прав на чтение view
+generateGrantSql(BiViewList s, BiUsers u) = 
+    IF readPermission(s, u) 
+    THEN 'GRANT SELECT ON report_lsfuson.' + quoteIfNeeded(viewName(s)) + ' TO biUser' + login(u) + ';'
+    ELSE 'REVOKE   ON report_lsfuson.' + quoteIfNeeded(viewName(s)) + ' TO biUser' + login(u) + ';'
+      ;
+
+// Генерация полного SQL скрипта для всех view
+generateAllViewsSql() = 
+    GROUP CONCAT 
+        generateViewSql(BiViewList s),
+        '\n\n'
+    IF enable(s)
+    ORDER (OVERRIDE order(s), 0), s;
+
+// Генерация полного SQL скрипта для всех пользователей
+generateAllUsersSql() = 
+    GROUP CONCAT 
+        generateUserSql(BiUsers u),
+        '\n'
+    ORDER u;
+
+// Генерация полного SQL скрипта для всех прав доступа
+generateAllGrantsSql() = 
+    GROUP CONCAT 
+        generateGrantSql(BiViewList s, BiUsers u),
+        '\n'
+    IF readPermission(s, u) AND enable(s)
+    ORDER s, u;
+
+
+generateSchema() = ' CREATE SCHEMA IF NOT EXISTS report_lsfuson; ';
+
+
+
+// Комбинированный скрипт: пользователи + view + права
+generateCompleteSql() = 
+    CONCAT '\n\n', generateSchema(), generateAllUsersSql(), generateAllViewsSql(), generateAllGrantsSql();
+
+// Свойство для отображения SQL в форме
+viewSqlText(BiViewList s) = generateViewSql(s);
+
+
+
+generateViewSqlForBiView(BiViewList d) + {
+     RETURN generateViewSql(d);
+}

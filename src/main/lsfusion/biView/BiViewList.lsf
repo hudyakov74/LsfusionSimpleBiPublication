@@ -1,0 +1,63 @@
+MODULE BiViewList;
+
+REQUIRE Reflection, BiUsers;
+
+NAMESPACE BiView;
+
+CLASS BiViewList 'Список публикаций виртуальных таблиц';
+TABLE biViewList(BiViewList);
+
+table 'Таблица (sys)'     = DATA       Table(BiViewList);
+enable   'Вкл'  = DATA BOOLEAN(BiViewList);
+disableKey0   'не брать Key0'  = DATA BOOLEAN(BiViewList);
+order   'Очередь создания'  = DATA INTEGER (BiViewList);
+name  'Имя таблицы view'  = DATA STRING[30](BiViewList);
+sqlManual 'SQL'  = DATA TEXT (BiViewList);
+isSqlManual 'Изменен вручную' (BiViewList s) = IF sqlManual(s) THEN TRUE; 
+FORM formBiViewList OBJECTS s = BiViewList PROPERTIES (s) READONLY name LIST BiViewList OBJECT s;
+
+TABLE biViewListBiUsers(BiViewList, BiUsers);
+readPermission 'Чтение' = DATA BOOLEAN (BiViewList, BiUsers);
+
+CLASS BiViewColumn 'колонки виртуальных таблиц';
+TABLE biViewColumn(BiViewColumn);
+enable   'Вкл'  = DATA BOOLEAN(BiViewColumn);
+
+tableBi  'Владелец колонок'   = DATA BiViewList(BiViewColumn);
+column   'Колонка (sys)'      = DATA TableColumn(BiViewColumn);
+columnBi 'Значение по ссылке' = DATA BiViewColumn(BiViewColumn);
+
+name      'Имя колонки view'  = DATA STRING[30](BiViewColumn);
+ 
+columnTableBi   'Таблица'     = DATA BiViewList(BiViewColumn);
+columnValueBi   'Колонка'     = DATA BiViewColumn(BiViewColumn);
+
+generateViewSqlForBiView(BiViewList d) ABSTRACT TEXT;
+
+FORM formBiViewColumn OBJECTS s = BiViewColumn PANEL, c = BiViewColumn PROPERTIES (c) READONLY  name LIST BiViewColumn OBJECT c;
+FORM formBiViewListSql 'Запрос измененный' 
+    OBJECTS d = BiViewList PANEL 
+    PROPERTIES sqlManual(d),
+    fillStandart 'Заполнить стандартным запросом' = {  sqlManual(d)  <- generateViewSqlForBiView(d); },
+    useStandart 'Cтандартный запрос (очистить и закрыть)' = {sqlManual(d) <- NULL; formClose();}
+;
+DESIGN formBiViewListSql {
+    PROPERTY(sqlManual(d)) {fill = 1; charWidth = 150; charHeight = 40;}
+    TOOLBARRIGHT {
+        MOVE PROPERTY (fillStandart);
+        MOVE PROPERTY (useStandart);
+    }
+}
+
+
+FORM formBiViewSql 'Запрос. просмотр'
+OBJECTS t = TEXT PANEL 
+    PROPERTIES t  '' =  VALUE (t);
+DESIGN formBiViewSql{
+OBJECTS {
+    fill = 1;  
+}
+   
+   BOX (t) {fill = 1;  resizeOverflow = TRUE;}
+    PROPERTY (t) {fill = 1 ; charWidth = 150; charHeight = 40;  }
+}

@@ -1,0 +1,50 @@
+MODULE BiViewExport;
+
+REQUIRE BiViewSqlGenerator, BiViewList, BiUsers;
+
+NAMESPACE BiView;
+
+// Свойства для хранения SQL скриптов
+sqlViewScript 'SQL для view' = DATA LOCAL TEXT ();
+sqlUserScript 'SQL для пользователей' = DATA LOCAL  TEXT ();
+sqlGrantScript 'SQL для прав доступа' = DATA LOCAL  TEXT ();
+sqlCompleteScript 'Полный SQL скрипт' = DATA LOCAL  TEXT ();
+
+// Действие для генерации и отображения SQL для одного view
+showViewSql 'Показать SQL view' (BiViewList s) { 
+    sqlViewScript() <- generateViewSql(s);
+}
+
+// Действие для генерации и отображения SQL для всех view
+showAllViewsSql 'Показать SQL всех view' () { 
+    sqlViewScript() <- generateAllViewsSql();
+}
+
+// Действие для генерации и отображения SQL для пользователей
+showUsersSql 'Показать SQL пользователей' () { 
+    sqlUserScript() <- generateAllUsersSql();
+}
+
+// Действие для генерации и отображения SQL для прав доступа
+showGrantsSql 'Показать SQL прав доступа' () { 
+    sqlGrantScript() <- generateAllGrantsSql();
+}
+
+// Действие для генерации полного SQL скрипта
+showCompleteSql 'Показать полный SQL скрипт' () { 
+    sqlCompleteScript() <- generateCompleteSql();
+}
+
+// Форма для просмотра и копирования SQL скриптов
+FORM sqlScriptViewer 'Просмотр SQL скриптов'
+    PROPERTIES 
+    sqlViewScript() READONLY,
+    sqlUserScript() READONLY,
+    sqlGrantScript() READONLY,
+    sqlCompleteScript() READONLY
+;
+
+// Действие для открытия окна просмотра SQL
+openSqlViewer 'Просмотр SQL скриптов' () { 
+    SHOW sqlScriptViewer DOCKED NOWAIT;
+}
