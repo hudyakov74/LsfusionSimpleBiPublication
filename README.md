@@ -1,6 +1,6 @@
 # BiView - Модуль генерации виртуальных таблиц для BI систем
 
-# Для добавления 
+# Для добавления BiView
 menu for bi publication:
 for example add in NAVIGATOR in module MAIN         
 
@@ -8,13 +8,13 @@ NAVIGATOR {
   NEW biViewForm;  
 }
 
-## скрипт для копирования в буфер обмена значений футеров таблиц и сводных таблиц
+## ДОПОЛНИТЕЛЬНО скрипт для копирования в буфер обмена значений футеров таблиц и сводных таблиц
 for oneClick copy from FOOTER add
 onWebClientInit() + {
     onWebClientInit('myBalanceCopyFooter.js') <- 1;
 }
 
-## скрипт калькулятора для numeric полей
+## ДОПОЛНИТЕЛЬНО скрипт калькулятора для numeric полей
 for Calculator on numeric input add
 
 onWebClientInit() + {
