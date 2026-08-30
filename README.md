@@ -9,13 +9,14 @@ NAVIGATOR {
 }
 
 ## ДОПОЛНИТЕЛЬНО: скрипт для копирования в буфер обмена значений футеров таблиц и сводных таблиц
-for oneClick copy from FOOTER add
+for oneClick copy from FOOTER add:
+
 onWebClientInit() + {
     onWebClientInit('myBalanceCopyFooter.js') <- 1;
 }
 
 ## ДОПОЛНИТЕЛЬНО: скрипт калькулятора для numeric полей
-for Calculator on numeric input add
+for Calculator on numeric input add:
 
 onWebClientInit() + {
     onWebClientInit('myBalanceCalculator.css') <- 1;
