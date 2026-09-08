@@ -80,8 +80,9 @@ ALTER USER "biuser'+ login(u) +'"   WITH PASSWORD \''+password(u)+'\';
 END IF;
 END
 $$;
-GRANT USAGE ON SCHEMA report_lsfuson TO "biuser'+ login(u) +'";
+GRANT USAGE ON SCHEMA public  TO "biuser'+ login(u) +'";
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO "biuser'+ login(u) +'";
+GRANT USAGE ON SCHEMA report_lsfuson TO "biuser'+ login(u) +'";
 ';
 // Генерация SQL для назначения прав на чтение view
 generateGrantSql(BiViewList s, BiUsers u) = 
