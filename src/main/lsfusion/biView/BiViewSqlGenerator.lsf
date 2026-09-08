@@ -73,20 +73,21 @@ generateUserSql(BiUsers u) =
 '
 DO $$
 BEGIN
-IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = \'biUser'+ login(u) +'\') THEN
-CREATE USER "biUser'+ login(u) +'"  WITH PASSWORD \''+password(u)+'\';
+IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = \'biuser'+ login(u) +'\') THEN
+CREATE USER "biuser'+ login(u) +'"  WITH PASSWORD \''+password(u)+'\';
 ELSE
-ALTER USER "biUser'+ login(u) +'"   WITH PASSWORD \''+password(u)+'\';
+ALTER USER "biuser'+ login(u) +'"   WITH PASSWORD \''+password(u)+'\';
 END IF;
 END
 $$;
-GRANT USAGE ON SCHEMA report_lsfuson TO "biUser'+ login(u) +'";
+GRANT USAGE ON SCHEMA report_lsfuson TO "biuser'+ login(u) +'";
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO "biuser'+ login(u) +'";
 ';
 // Генерация SQL для назначения прав на чтение view
 generateGrantSql(BiViewList s, BiUsers u) = 
     IF readPermission(s, u) 
-    THEN 'GRANT SELECT ON report_lsfuson.' + quoteIfNeeded(viewName(s)) + ' TO "biUser' + login(u) + '";'
-    ELSE 'REVOKE   ON report_lsfuson.' + quoteIfNeeded(viewName(s)) + ' TO "biUser' + login(u) + '";'
+    THEN 'GRANT SELECT ON report_lsfuson.' + quoteIfNeeded(viewName(s)) + ' TO "biuser' + login(u) + '";'
+    ELSE 'REVOKE   ON report_lsfuson.' + quoteIfNeeded(viewName(s)) + ' TO "biuser' + login(u) + '";'
       ;
 
 // Генерация полного SQL скрипта для всех view
