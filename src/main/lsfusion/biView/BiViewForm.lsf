@@ -61,8 +61,8 @@ FORM biViewForm 'Форма генерации view для BI систем'
                                                                                      name(c) <- caption( inp );
                                                                                  } 
                                                                              },
-    columnTableBi 'Таблица для значения' =  name(columnTableBi(c)),
-    columnValueBi 'Колонка для значения' =  name(columnValueBi(c)),
+    columnTableBi 'Таблица для значения' =  name(columnTableBi(c)) ON CHANGE AFTER {  columnValueBi(c) <- NULL WHERE NOT tableBi(columnValueBi(c)) == columnTableBi(c); },
+    columnValueBi 'Колонка для значения' =  name(columnValueBi(c)) ON CHANGE { DIALOG formBiViewColumn OBJECTS s = columnTableBi(c), col = columnValueBi(c) INPUT in  LIST name(in) DO {columnValueBi(c) <- in;}; },
     sid           'Колонка (sys)'         = sid(column(c)) READONLY
 
     OBJECTS users = BiUsers
