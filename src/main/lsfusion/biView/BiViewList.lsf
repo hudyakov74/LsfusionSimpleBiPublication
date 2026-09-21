@@ -34,7 +34,11 @@ columnValueBi   'Колонка'     = DATA BiViewColumn(BiViewColumn);
 
 generateViewSqlForBiView(BiViewList d) ABSTRACT TEXT;
 
-FORM formBiViewColumn OBJECTS s = BiViewColumn PANEL, c = BiViewColumn PROPERTIES (c) READONLY  name LIST BiViewColumn OBJECT c;
+FORM formBiViewColumn OBJECTS s = BiViewList PANEL, col = BiViewColumn
+    FILTERS tableBi(col) == s 
+    PROPERTIES name(s) CHANGEABLE 
+    PROPERTIES (col) READONLY  name LIST BiViewColumn OBJECT col;
+
 FORM formBiViewListSql 'Запрос измененный' 
     OBJECTS d = BiViewList PANEL 
     PROPERTIES sqlManual(d),
