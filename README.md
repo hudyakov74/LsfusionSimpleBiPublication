@@ -17,7 +17,7 @@ onWebClientInit() + {
     onWebClientInit('myBalanceCopyFooter.js') <- 1;
 }
 
-## ДОПОЛНИТЕЛЬНО: скрипт калькулятора для numeric полей
+## ДОПОЛНИТЕЛЬНО: скрипт калькулятора для numeric полей (ai generated)
 for Calculator on numeric input add:
 
 onWebClientInit() + {
